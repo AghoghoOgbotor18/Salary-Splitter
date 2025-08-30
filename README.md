@@ -22,6 +22,9 @@ A simple **web-based budgeting tool** built with HTML, CSS, and JavaScript. It h
 
 ---
 
+## 🚀 Live Demo  
+Check out the project here: [Smart Budget Planner](https://aghoghoogbotor18.github.io/Salary-Splitter/)
+
 ## 📂 Setup
 1. Clone this repository:
    ```bash
