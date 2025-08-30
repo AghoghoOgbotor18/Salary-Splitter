@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" >
+  <meta name="viewport" content="width=device-width, initial-scale=1" >
+  <title>Salary Splitter</title>
+  <link rel="stylesheet" href="./style.css" >
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">₦</span>
+      <span>Salary Splitter</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card" id="salary-card">
+      <h1>Split your salary wisely</h1>
+      <!--Info about the web app-->
+      <p class="muted">
+        Add your <strong>fixed (main)</strong> expenses with total amount and duration.
+        We’ll prioritize them, save <strong>a percentage</strong> of what’s left, then share the rest across your
+        <strong>miscellaneous</strong> expenses.
+      </p>
+
+      <!-- The Form -->
+      <form id="salary-form" class="form">
+        <div class="form-row">
+          <label for="salary">Monthly Salary (₦)</label>
+          <input type="text" id="salary" class="format-number" inputmode="decimal" min="0" step="0.01" required placeholder="e.g., 200000" >
+        </div>
+
+        <!-- Main Expenses -->
+        <div class="section-divider">
+          <h2>Main (Fixed) Expenses</h2>
+          <p class="muted small">
+            Enter the <em>total amount</em> and <em>duration (months)</em>. We’ll compute the monthly share automatically.
+          </p>
+        </div>
+
+        <!-- Main Expenses Container -->
+        <div id="expenses-container" class="stack">
+          <div class="expenses-inputs grid-3">
+            <input type="text" class="expense-name" placeholder="Expense name (e.g., Rent)" required>
+            <input type="text" class="expense-amount format-number" placeholder="Total amount (e.g., 100000)" min="0" step="0.01" required>
+            <input type="number" class="expense-duration" placeholder="Duration in months (e.g., 12)" min="1" step="1" required>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" id="add-expense" class="btn ghost">+ Add another main expense</button>
+        </div>
+
+        <!--Miscelaneous Expenses-->
+        <div class="section-divider">
+          <h2>Miscellaneous Expenses</h2>
+          <p class="muted small">
+            Add only the <em>names</em> (e.g., Groceries, Transport). We’ll share the remaining amount equally.
+          </p>
+        </div>
+
+        <div id="misc-container" class="stack">
+          <!-- Misc inputs will be appended inside #expenses-container by JS to keep one area -->
+          <div class="info-row">
+            <button id="sub-expenses" class="btn outline" type="button">+ Add miscellaneous</button>
+            <span class="muted small">You can add as many as you like.</span>
+          </div>
+        </div>
+
+        <div class="btn-row end">
+          <button type="submit" id="split" class="btn primary">Split My Salary</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Results -->
+    <section id="result" class="card hidden">
+      <h2>Here’s your salary split</h2>
+      <!-- Fixed Expenses -->
+      <div class="result-grid">
+        <div class="result-block">
+          <h2 id="result-display">Fixed Expenses (Priority)</h2>
+          <div id="fixed-summary" class="summary">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+        <!-- Savings -->
+        <div class="result-block">
+          <h2 id="result-display">Savings</h2>
+          <div id="savings-summary" class="summary">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+        <!-- Emergency Funds -->
+        <div class="result-block">
+          <h2 id="result-display">Emergency Fund</h2>
+          <div id="savings-summary" class="summary">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+        <!-- Miscelleneous Allocation -->
+        <div class="result-block">
+          <h2 id="result-display">Miscellaneous Allocation</h2>
+          <div id="misc-summary" class="summary">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div id="breakdown" class="breakdown">
+        <!-- The JS writes a full breakdown here -->
+      </div>
+      <button id="okBtn" class="btn primary">OK</button>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p class="muted small">Built for smart budgeting • ₦ Naira supported</p>
+  </footer>
+
+  <script src="./script.js"></script>
+</body>
+</html>
