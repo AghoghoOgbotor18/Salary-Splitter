@@ -1,7 +1,9 @@
 document.getElementById("salary-form").addEventListener("submit", function(e) {
     e.preventDefault();
     const salary = parseFloat(document.getElementById("salary").value.replace(/,/g, "")) || 0;
-    
+        // === OUTPUT SECTION ===
+    const breakdown = document.getElementById("breakdown");
+
     // === MAIN EXPENSES ===
     const expenseInputs = document.querySelectorAll("#expenses-container .expenses-inputs");
     let mainExpenses = []; //Array to save all main expenses
@@ -22,92 +24,86 @@ document.getElementById("salary-form").addEventListener("submit", function(e) {
 
     // Salary left after main expenses
     let remaining = salary - totalMainMonthly;
-
-    if(remaining < 0) {
-        alert("⚠️ Your salary is not enough to cover main expenses!");
-        return;
-    }
-    // === ASK USER FOR SAVINGS PERCENTAGE ===
-    let savingsPercent = parseFloat(prompt("Enter the percentage (%) of savings you want from the remainder after main expenses:", "20"));
-    if(isNaN(savingsPercent) || savingsPercent < 0 || savingsPercent > 100) {
-        alert("⚠️ Please enter a valid savings percentage between 0 and 100.");
-        return;
-    }
-    //== ASK USER FOR EMERGENCY FUNDS PERCENTAGE ===
-    let emergencyFund = parseFloat(prompt("Enter the percentage (%) of emergency fund you want from the remainder after main expenses and savings:", "10"));
-    if(isNaN(emergencyFund) || emergencyFund < 0 || emergencyFund > 100) {
-        alert("⚠️ Please enter a valid savings percentage between 0 and 100.");
-        return;
-    }
-
-    // === SPLIT REMAINING ===
-    const savings = (remaining * savingsPercent) / 100;
-    const emergencyCash = ((remaining - savings) * emergencyFund) / 100;
-    const miscPool = remaining - savings - emergencyCash;
-
-    // Collect misc expenses (user enters only names)
-    const miscInputs = document.querySelectorAll(".misc-expense");
-    let miscExpenses = [];
-    miscInputs.forEach(input => {
-        if(input.value.trim() !== "") {
-            miscExpenses.push(input.value.trim());
-        }
-    });
-
-    // Divide miscPool equally among misc expenses
-    let miscAllocations = [];
-    if(miscExpenses.length > 0) {
-        const share = miscPool / miscExpenses.length;
-        miscAllocations = miscExpenses.map(name => ({
-            name,
-            amount: share
-        }));
-    }
-    
-    // === TOTAL EXPENSES (main + savings + misc) ===
-    const totalExpenses = totalMainMonthly + savings + emergencyCash +  miscAllocations.reduce((sum, m) => sum + m.amount, 0);
-
-    // === OUTPUT SECTION ===
-    const breakdown = document.getElementById("breakdown");
-
-    // === CHECK IF EXPENSES > SALARY ===
-    if(totalExpenses > salary) {
-        alert("⚠️ Your total expenses are higher than your salary. Here's a suggested better plan.");
-
-        // Scale expenses down to fit inside salary
-        let scaleFactor = salary * 0.80 / totalMainMonthly; // 80% of salary goes to main expenses
-        let adjustedExpenses = mainExpenses.map(exp => ({
-            name: exp.name,
-            monthlyShare: exp.monthlyShare * scaleFactor
-        }));
-
-        let newSavings = salary * 0.10; // 10% savings
-        let newEmergency = salary * 0.05; // 5% emergency fund
-        let newMiscPool = salary - (adjustedExpenses.reduce((a,b)=>a+b.monthlyShare,0) + newSavings + newEmergency);
-        
-        // === OUTPUT ===
+    if(remaining < 0){
+        alert("Your fixed expenses alone covers your salary. There is no room for savings, emergency fund and miscelleneous expenses.");
         breakdown.innerHTML = `
-            <h3>💡 Suggested Budget Plan</h3>
-            <h4>Fixed Expenses (Adjusted)</h4>
+            <h3>Fixed Expenses (Priority)</h3>
             <ul>
-                ${adjustedExpenses.map(exp => `<li>${exp.name}: ₦${exp.monthlyShare.toFixed(2)} / month</li>`).join("")}
+                ${mainExpenses.map(exp => 
+                    `<li>${exp.name}: ₦${exp.monthlyShare.toFixed(2)} / month (out of ${exp.amount} for ${exp.duration} month(s)).</li>`
+                ).join("")}
             </ul>
-            <h4>Savings (10%)</h4>
-            <p>₦${newSavings.toFixed(2)}</p>
-            <h4>Emergency Fund (5%)</h4>
-            <p>₦${newEmergency.toFixed(2)}</p>
-            <h4>Miscellaneous Pool</h4>
-            <p>₦${newMiscPool.toFixed(2)}</p>
-            <h4>Total Adjusted Expenses</h4>
-            <p>The total expenses<b>₦${salary.toFixed(2)}</b> (balanced with your salary)</p>
+            <p>₦${totalMainMonthly.toFixed(2)} exceeds your monthly salary.</p>
+            <hr>
+
+            <h4>Savings</h4>
+            <p>No Savings Available</p>
+            <hr>
+
+            <h4>Emergency Fund</h4>
+            <p>No Emergency Fund Available</p>
+            <hr>
+
+            <h4>Miscellaneous Expenses</h4>
+            <p>Your salary does not include miscellenous expenses.</p>
+            <hr>
+
+            <h4>FeedBack</h4>
+            <p>Your fixed expenses ₦${totalMainMonthly.toLocaleString()} per month is higher your salary (₦${salary.toLocaleString()}).</p>
+            <hr>
+
+            <h4>Tip</h4>
+            <p>Try to cut down on your fixed expenses, learn a skill to increase income or change your current job to meet up your expenses.</p>
         `;
+
     } else {
+
+        // === ASK USER FOR SAVINGS PERCENTAGE ===
+        let savingsPercent = parseFloat(prompt("Enter the percentage (%) of savings you want from the remainder after main expenses:"));
+        if(isNaN(savingsPercent) || savingsPercent < 0 || savingsPercent > 100) {
+            alert("⚠️ Please enter a valid savings percentage between 0 and 100.");
+            return;
+        }
+
+        //== ASK USER FOR EMERGENCY FUNDS PERCENTAGE ===
+        let emergencyFund = parseFloat(prompt("Enter the percentage (%) of emergency fund you want from the remainder after main expenses and savings:"));
+        if(isNaN(emergencyFund) || emergencyFund < 0 || emergencyFund > 100) {
+            alert("⚠️ Please enter a valid savings percentage between 0 and 100.");
+            return;
+        }
+
+        // === SPLIT REMAINING ===
+        const savings = (remaining * savingsPercent) / 100;
+        const emergencyCash = ((remaining - savings) * emergencyFund) / 100;
+        const miscPool = remaining - savings - emergencyCash;
+
+        // Collect misc expenses (user enters only names)
+        const miscInputs = document.querySelectorAll(".misc-expense");
+        let miscExpenses = [];
+        miscInputs.forEach(input => {
+            if(input.value.trim() !== "") {
+                miscExpenses.push(input.value.trim());
+            }
+        });
+
+        // Divide miscPool equally among misc expenses
+        let miscAllocations = [];
+        if(miscExpenses.length > 0) {
+            const share = miscPool / miscExpenses.length;
+            miscAllocations = miscExpenses.map(name => ({
+                name,
+                amount: share
+            }));
+        }
+        
+        // === TOTAL EXPENSES (main + savings + misc) ===
+        const totalExpenses = totalMainMonthly + savings + emergencyCash +  miscAllocations.reduce((sum, m) => sum + m.amount, 0);
         // === NORMAL OUTPUT ===
         breakdown.innerHTML = `
             <h3>Fixed Expenses (Priority)</h3>
             <ul>
                 ${mainExpenses.map(exp => 
-                    `<li>${exp.name}: ₦${exp.monthlyShare.toFixed(2)} / month</li>`
+                    `<li>${exp.name}: ₦${exp.monthlyShare.toFixed(2)} / month (out of ${exp.amount} for ${exp.duration} month(s)).</li>`
                 ).join("")}
             </ul>
             <h3>Savings (${savingsPercent}% of remainder)</h3>
