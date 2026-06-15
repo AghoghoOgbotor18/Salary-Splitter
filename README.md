@@ -1,76 +1,110 @@
-# 💰 Smart Budget Planner
+# Salary Splitter
 
-A simple **web-based budgeting tool** built with HTML, CSS, and JavaScript. It helps users plan their monthly salary, track expenses, and receive intelligent suggestions if expenses exceed income.  
+A **smart, web-based budgeting tool** built with vanilla HTML, CSS, and JavaScript. It helps Nigerian salary earners plan their monthly income by prioritizing fixed expenses, setting aside savings and an emergency fund, and distributing the rest across miscellaneous spending — all in one clean flow.
 
 ---
 
-## 🚀 Features
-- Enter monthly salary with **comma-formatted numbers** (₦1,000, ₦50,000, ₦1,000,000).  
-- Add multiple fixed expenses and miscellaneous expenses dynamically.  
-- Automatic formatting of numbers without affecting calculations.  
-- Expense breakdown shown clearly (Fixed Expenses, Savings, Emergency Fund, Miscellaneous).  
-- Alerts when expenses exceed salary, with **auto-adjusted budget suggestions**.  
-- "OK" button to reset the planner and scroll back to the salary input.  
-- User-friendly design with spacing and styled input fields.  
+## Features
+
+- Enter monthly salary with **live comma-formatting** (e.g. ₦200,000).
+- Add multiple **fixed expenses** with total amount and duration — monthly share is calculated automatically.
+- Set **savings and emergency fund percentages** inline (no more browser prompts) with a live hint showing how much is left for miscellaneous.
+- Add **miscellaneous expenses by name** — the remaining balance is shared equally between them.
+- **Remove button** on every dynamically added row so users can correct mistakes easily.
+- **Visual split bar** — a color-coded horizontal bar showing exactly how your salary is distributed at a glance.
+- **Inline validation** — clear, specific error messages appear next to the relevant field instead of alert popups.
+- **Download Summary** — generates a beautifully styled, printable HTML file of the full breakdown, saved to the user's device.
+- **localStorage session saving** — the form state is saved automatically as the user types. On return, a resume banner appears letting them pick up where they left off or start fresh.
+- **Go Back button** — takes the user back to their filled-in form from the results screen without losing any data.
+- **Start Over button** — saves the current session to localStorage, resets the form, and shows a resume prompt for next time.
+- **Contextual budget tips** — smart suggestions based on the user's actual numbers (over budget, no savings set, high savings rate, etc.).
+- Fully **mobile responsive** layout.
 
 ---
 
 ## 🛠️ Tech Stack
-- **HTML5** – structure  
-- **CSS3** – styling & layout  
-- **JavaScript (ES6)** – interactivity, calculations, dynamic rendering  
+
+- **HTML5** — structure and semantics
+- **CSS3** — layout, theming, responsive design, animations
+- **JavaScript (ES6+)** — calculations, DOM manipulation, localStorage, file generation
 
 ---
 
-## 🚀 Live Demo  
-Check out the project here: [Smart Budget Planner](https://aghoghoogbotor18.github.io/Salary-Splitter/)
+## 🌐 Live Demo
+
+[Salary Splitter →](https://aghoghoogbotor18.github.io/Salary-Splitter/)
+
+---
 
 ## 📂 Setup
-1. Clone this repository:
+
+1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/smart-budget-planner.git
+   git clone https://github.com/your-username/salary-splitter.git
    ```
-2. Open the project folder and launch `index.html` in a browser.  
-3. Start planning your budget 💡.  
+2. Open the project folder and launch `index.html` in any browser.
+3. Start planning your budget
 
 ---
 
-## ⚡ Challenges & Solutions
-### 1. **Numbers formatting with commas**
-- **Challenge**: I wanted digits to display as `1,000` or `123,000,000` but still be usable for calculations.  
-- **Solution**: Used `.toLocaleString()` for display while keeping raw values for math.  
+## Challenges & Solutions
 
-### 2. **Dynamic expense inputs**
-- **Challenge**: New inputs added by "Add Another Expense" button weren’t styled like the default ones.  
-- **Solution**: Applied the same CSS class dynamically when creating elements via JavaScript.  
+### 1. Number formatting with commas
+**Challenge:** I wanted numbers to display as `₦200,000` while still being usable in calculations.
+**Solution:** Used `.toLocaleString()` for display formatting and `.replace(/,/g, "")` with `parseFloat()` to strip commas before any math is done.
 
-### 3. **Salary input bug**
-- **Challenge**: Digits in the salary input disappeared after typing three numbers.  
-- **Solution**: Fixed input handling by separating display formatting and raw value parsing.  
+### 2. Dynamic expense inputs
+**Challenge:** Inputs added dynamically via the "Add" button weren't picking up the auto-format behavior.
+**Solution:** Applied the `format-number` class to all dynamically created inputs and used a delegated `document.addEventListener("input", ...)` listener so it works on any input — present or future — without re-attaching events.
 
-### 4. **Resetting on OK button**
-- **Challenge**: After pressing "OK", extra expense inputs stayed open.  
-- **Solution**: On reset, cleared values and removed dynamically added fields so form returns to default.  
+### 3. Replacing browser prompts with inline inputs
+**Challenge:** The original design used `prompt()` dialogs for savings and emergency fund percentages, which looked outdated and broke on some mobile browsers.
+**Solution:** Moved both percentage fields into the form as proper labeled inputs with inline validation and a live percentage hint that updates as the user types.
 
-### 5. **Expense exceeding salary**
-- **Challenge**: If expenses were greater than salary, the results were confusing and didn’t suggest improvements.  
-- **Solution**: Added an algorithm to:  
-  - Scale down fixed expenses  
-  - Allocate 10% to savings  
-  - Allocate 5% to emergency fund  
-  - Distribute the remaining into miscellaneous pool  
+### 4. Validating without alert popups
+**Challenge:** Using `alert()` for errors was jarring and didn't tell the user which field was wrong.
+**Solution:** Built a `showFieldError(id, msg)` helper that targets the specific error `<span>` next to each input and makes it visible. A top-level error banner handles form-wide issues like incomplete rows.
+
+### 5. Go Back without losing data
+**Challenge:** Going back to edit the form after seeing results meant the user would have to re-enter everything.
+**Solution:** The form is never cleared when Go Back is clicked — only the visible card switches. The form inputs retain their values, so the user can tweak one thing and re-submit.
+
+### 6. localStorage session with resume prompt
+**Challenge:** Saving to localStorage on every keypress is easy, but deciding when to restore and how to give the user control was tricky.
+**Solution:** On page load, the app checks for a saved session. If one exists, it silently restores the form and shows a dismissible resume banner with the last-saved date. The user can either continue or discard. Start Over saves the session before resetting so the data is never accidentally lost.
+
+### 7. Downloadable styled HTML summary
+**Challenge:** A plain `.txt` download is forgettable. Users needed something they could open, read, share, or print.
+**Solution:** Built an HTML template string in JavaScript that generates a fully self-contained, styled HTML file with color-coded tiles, a split bar, and expense tables. It downloads as `salary-split-YYYY-MM-DD.html` using the Blob API.
+
+### 8. Duplicate IDs in the original HTML
+**Challenge:** `id="result-display"` and `id="savings-summary"` were reused on multiple elements, which breaks JavaScript selectors and is invalid HTML.
+**Solution:** Replaced all duplicate IDs with unique IDs or classes and updated all JavaScript references accordingly.
 
 ---
 
-## 🔮 Future Improvements
-- [ ] Save user budgets in **localStorage** so they don’t lose data on refresh.  
-- [ ] Add **charts/graphs** (e.g., Pie chart for expense distribution).  
-- [ ] Allow **categories for expenses** (Food, Rent, Transport, etc.).  
-- [ ] Add **export to PDF** option for reports.  
-- [ ] Support for **multiple currencies** (₦, $, €, £).  
-- [ ] Mobile responsive UI with smoother transitions.  
+## Completed Improvements
+
+- [x] Save user session in **localStorage** — no data lost on refresh
+- [x] Visual **split bar** for expense distribution
+- [x] **Download summary** as a styled, printable HTML file
+- [x] Inline validation replacing all `alert()` and `prompt()` calls
+- [x] Remove button on all dynamically added rows
+- [x] Go Back button to edit without re-entering data
+- [x] Contextual budget tips based on user's actual numbers
 
 ---
 
-## 📜 License
-This project is open-source and free to use.  
+## Future Improvements
+
+- [ ] Pie or donut chart for visual expense distribution
+- [ ] Support for **multiple currencies** (₦, $, €, £)
+- [ ] **Expense categories** (Food, Rent, Transport, etc.)
+- [ ] Budget history — view and compare past months
+- [ ] Dark/light mode toggle
+
+---
+
+## License
+
+This project is open-source and free to use.
