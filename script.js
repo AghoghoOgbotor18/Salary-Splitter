@@ -168,6 +168,7 @@ function escapeHtml(str) {
 }
 
 /* ON PAGE LOAD — show resume banner only, form stays empty */
+(function initSession() {
   const session = loadSession();
   if (!session) return;
 
@@ -178,7 +179,7 @@ function escapeHtml(str) {
   });
   resumeDate.textContent = formatted;
   resumeBanner.classList.remove("hidden");
-
+})();
 
 // "Resume session" button restores the form THEN hides the banner
 document.getElementById("resumeBtn").addEventListener("click", function() {
