@@ -447,6 +447,9 @@ input.field-locked:focus {
   justify-content: flex-end;
   flex-wrap: wrap;
 }
+.expenses-inputs{
+  margin-bottom: 12px;
+}
 
 /* Footer */
 .footer {
