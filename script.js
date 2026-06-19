@@ -178,7 +178,7 @@ function escapeHtml(str) {
   });
   resumeDate.textContent = formatted;
   resumeBanner.classList.remove("hidden");
-})();
+
 
 // "Resume session" button restores the form THEN hides the banner
 document.getElementById("resumeBtn").addEventListener("click", function() {
