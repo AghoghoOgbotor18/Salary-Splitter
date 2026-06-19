@@ -6,6 +6,7 @@ const salaryInput    = document.getElementById("salary");
 const savingsPctEl   = document.getElementById("savings-pct");
 const emergencyPctEl = document.getElementById("emergency-pct");
 const pctHint        = document.getElementById("pct-hint");
+const budgetHint      = document.getElementById("budget-hint");
 const formError      = document.getElementById("form-error");
 const expContainer   = document.getElementById("expenses-container");
 const miscContainer  = document.getElementById("misc-container");
@@ -25,12 +26,11 @@ const splitBar       = document.getElementById("split-bar");
 const splitLegend    = document.getElementById("split-legend");
 const resultMeta     = document.getElementById("result-meta");
 const overBudget     = document.getElementById("over-budget");
+const overBudgetText = document.getElementById("over-budget-text");
 const tipBlock       = document.getElementById("tip-block");
 
 // Keep last calculated data so Go Back can re-render without recalculating
 let lastResultData = null;
-
-/* helpers */
 
 /* Format a number as ₦ currency string */
 function fmt(n) {
@@ -74,7 +74,7 @@ function showFormError(msg) {
 
 /* Local Storage */
 
-/** Collect current form state into a plain object */
+/* Collect current form state into a plain object */
 function collectFormState() {
   const fixedRows = [];
   expContainer.querySelectorAll(".expenses-inputs").forEach(row => {
@@ -125,7 +125,7 @@ function clearSession() {
   try { localStorage.removeItem(LS_KEY); } catch (e) { /* silent */ }
 }
 
-/** Restore form from a saved session object */
+/* Restore form from a saved session object */
 function restoreForm(session) {
   // Salary
   salaryInput.value = session.salary || "";
@@ -134,6 +134,7 @@ function restoreForm(session) {
   savingsPctEl.value   = session.savingsPct   || "";
   emergencyPctEl.value = session.emergencyPct || "";
   updatePctHint();
+  updateBudgetHint();
 
   // Fixed expense rows
   expContainer.innerHTML = ""; // clear first
@@ -148,7 +149,7 @@ function restoreForm(session) {
       <input type="text"   class="expense-name"   placeholder="Name (e.g. Rent)" value="${escapeHtml(r.name)}">
       <input type="text"   class="expense-amount format-number" placeholder="Total amount" value="${escapeHtml(r.amount)}">
       <input type="number" class="expense-duration" placeholder="Months" min="1" step="1" value="${escapeHtml(r.duration)}">
-      <button type="button" class="btn danger-ghost remove-row ${i === 0 ? "hidden-remove" : ""}" title="Remove row">✕ Remove</button>
+      <button type="button" class="btn danger-ghost remove-row ${i === 0 ? "hidden-remove" : ""}" title="Remove row">X Remove</button>
     `;
     expContainer.appendChild(row);
   });
@@ -158,7 +159,7 @@ function restoreForm(session) {
   (session.miscNames || []).forEach(name => addMiscRow(name));
 }
 
-/* Tiny guard for values going into innerHTML */
+/* Tiny XSS guard for values going into innerHTML */
 function escapeHtml(str) {
   return String(str || "")
     .replace(/&/g, "&amp;")
@@ -172,7 +173,7 @@ function escapeHtml(str) {
   const session = loadSession();
   if (!session) return;
 
-  // Show the resume banner with formatted date - form stays untouched/empty
+  // Show the resume banner with formatted date — form stays untouched/empty
   const d = new Date(session.savedAt);
   const formatted = d.toLocaleDateString("en-NG", {
     weekday: "short", day: "numeric", month: "short", year: "numeric",
@@ -181,20 +182,26 @@ function escapeHtml(str) {
   resumeBanner.classList.remove("hidden");
 })();
 
-// "Resume session" button restores the form THEN hides the banner
+// "Resume session" button — restores the form THEN hides the banner
 document.getElementById("resumeBtn").addEventListener("click", function() {
   const session = loadSession();
   if (session) restoreForm(session);
   resumeBanner.classList.add("hidden");
 });
 
-// "Start fresh" button discards the saved session, form stays empty
+// "Start fresh" button — discards the saved session, form stays empty
 document.getElementById("discardBtn").addEventListener("click", function() {
   clearSession();
   resumeBanner.classList.add("hidden");
+  overBudget.classList.add("hidden");
+  budgetHint.textContent = "";
+  budgetHint.classList.remove("budget-warning", "budget-danger");
+
+  //restore all field to default state
+  setOptionalFieldsLocked(false);
 });
 
-/* Live hints / formatting */
+/* Live hints nd formatting */
 
 function updatePctHint() {
   const s = parseFloat(savingsPctEl.value) || 0;
@@ -214,6 +221,96 @@ function updatePctHint() {
 savingsPctEl.addEventListener("input", updatePctHint);
 emergencyPctEl.addEventListener("input", updatePctHint);
 
+/** Live check: warns the user the moment fixed expenses meet or exceed salary */
+/*
+ * Lock or unlock the Savings, Emergency, and Misc inputs.
+ * Locked = cursor: not-allowed, read-only, visually dimmed.
+ * Used when fixed expenses already meet or exceed the salary,
+ * since there's no remainder left to allocate.
+ */
+function setOptionalFieldsLocked(locked) {
+  [savingsPctEl, emergencyPctEl].forEach(el => {
+    el.readOnly = locked;
+    el.classList.toggle("field-locked", locked);
+  });
+
+  document.querySelectorAll(".misc-expense").forEach(el => {
+    el.readOnly = locked;
+    el.classList.toggle("field-locked", locked);
+  });
+
+  // Also lock the "+ Add miscellaneous" button so users can't add more while locked
+  const addMiscBtn = document.getElementById("sub-expenses");
+  if (addMiscBtn) {
+    addMiscBtn.disabled = locked;
+    addMiscBtn.classList.toggle("btn-locked", locked);
+  }
+}
+
+function updateBudgetHint() {
+  const salary = parseAmount(salaryInput.value);
+
+  let totalFixed = 0;
+  expContainer.querySelectorAll(".expenses-inputs").forEach(row => {
+    const amount   = parseAmount(row.querySelector(".expense-amount").value);
+    const duration = parseFloat(row.querySelector(".expense-duration").value);
+    if (amount && duration) {
+      totalFixed += amount / duration;
+    }
+  });
+
+  // Nothing to evaluate yet
+  if (!salary || totalFixed === 0) {
+    budgetHint.textContent = "";
+    budgetHint.classList.remove("budget-warning", "budget-danger");
+    setOptionalFieldsLocked(false);
+    return;
+  }
+
+  if (totalFixed > salary) {
+    const over = totalFixed - salary;
+    budgetHint.textContent = `⚠ Your fixed expenses (${fmt(totalFixed)}) already exceed your salary by ${fmt(over)}. There won't be room for savings, emergency fund, or miscellaneous spending.`;
+    budgetHint.classList.add("budget-danger");
+    budgetHint.classList.remove("budget-warning");
+    setOptionalFieldsLocked(true);
+  } else if (totalFixed === salary) {
+    budgetHint.textContent = `⚠ Your fixed expenses exactly match your salary (${fmt(totalFixed)}). Nothing will be left for savings, emergency fund, or miscellaneous spending.`;
+    budgetHint.classList.add("budget-danger");
+    budgetHint.classList.remove("budget-warning");
+    setOptionalFieldsLocked(true);
+  } else {
+    const remainder = salary - totalFixed;
+    const pctUsed = ((totalFixed / salary) * 100).toFixed(0);
+    setOptionalFieldsLocked(false);
+    if (pctUsed >= 80) {
+      budgetHint.textContent = `Fixed expenses use ${pctUsed}% of your salary — only ${fmt(remainder)} left for everything else.`;
+      budgetHint.classList.add("budget-warning");
+      budgetHint.classList.remove("budget-danger");
+    } else {
+      budgetHint.textContent = "";
+      budgetHint.classList.remove("budget-warning", "budget-danger");
+    }
+  }
+}
+
+// Recalculate the live budget hint whenever salary or any expense field changes
+salaryInput.addEventListener("input", updateBudgetHint);
+expContainer.addEventListener("input", function(e) {
+  if (
+    e.target.classList.contains("expense-amount") ||
+    e.target.classList.contains("expense-duration")
+  ) {
+    updateBudgetHint();
+  }
+});
+// Also recheck whenever a row is added or removed
+document.getElementById("add-expense").addEventListener("click", updateBudgetHint);
+expContainer.addEventListener("click", function(e) {
+  if (e.target.classList.contains("remove-row")) {
+    updateBudgetHint();
+  }
+});
+
 // Auto-save form to localStorage on every input change
 document.getElementById("salary-form").addEventListener("input", saveSession);
 
@@ -224,7 +321,7 @@ document.addEventListener("input", function(e) {
   }
 });
 
-/* Add / remove rows */
+/* Add / Remove rows */
 
 document.getElementById("add-expense").addEventListener("click", function() {
   const row = document.createElement("div");
@@ -260,7 +357,7 @@ function addMiscRow(name = "") {
   const removeBtn = document.createElement("button");
   removeBtn.type = "button";
   removeBtn.classList.add("btn", "danger-ghost", "remove-misc");
-  removeBtn.textContent = "✕";
+  removeBtn.textContent = "X";
   removeBtn.title = "Remove";
   removeBtn.addEventListener("click", () => { wrap.remove(); saveSession(); });
 
@@ -280,7 +377,7 @@ document.getElementById("salary-form").addEventListener("submit", function(e) {
   e.preventDefault();
   clearErrors();
 
-  // Salary
+  //Salary
   const salary = parseAmount(salaryInput.value);
   if (!salary || salary <= 0) {
     showFieldError("salary-error", "Please enter a valid salary.");
@@ -288,27 +385,7 @@ document.getElementById("salary-form").addEventListener("submit", function(e) {
     return;
   }
 
-  // Percentages
-  const savingsPct   = parseFloat(savingsPctEl.value);
-  const emergencyPct = parseFloat(emergencyPctEl.value);
-  let pctValid = true;
-
-  if (isNaN(savingsPct) || savingsPct < 0 || savingsPct > 100) {
-    showFieldError("savings-error", "Enter a value between 0 and 100.");
-    pctValid = false;
-  }
-  if (isNaN(emergencyPct) || emergencyPct < 0 || emergencyPct > 100) {
-    showFieldError("emergency-error", "Enter a value between 0 and 100.");
-    pctValid = false;
-  }
-  if (!pctValid) return;
-
-  if (savingsPct + emergencyPct > 100) {
-    showFormError(`Savings (${savingsPct}%) + Emergency (${emergencyPct}%) can't exceed 100%.`);
-    return;
-  }
-
-  // Fixed expenses
+/* Fixed expenses (calculated BEFORE percentage validation, so we know whether there's actually a remainder left to split between savings/emergency) */
   const expRows = expContainer.querySelectorAll(".expenses-inputs");
   const mainExpenses = [];
   let totalMainMonthly = 0;
@@ -334,7 +411,43 @@ document.getElementById("salary-form").addEventListener("submit", function(e) {
 
   if (rowErrors) return;
 
-  // Misc names
+  const remainingBeforePct = salary - totalMainMonthly;
+  const isAlreadyOverBudget = remainingBeforePct <= 0;
+
+  // Percentages — only required if fixed expenses haven't already used up the salary
+  let savingsPct   = 0;
+  let emergencyPct = 0;
+
+  if (!isAlreadyOverBudget) {
+    savingsPct   = parseFloat(savingsPctEl.value);
+    emergencyPct = parseFloat(emergencyPctEl.value);
+    let pctValid = true;
+
+    if (isNaN(savingsPct) || savingsPct < 0 || savingsPct > 100) {
+      showFieldError("savings-error", "Enter a value between 0 and 100.");
+      pctValid = false;
+    }
+    if (isNaN(emergencyPct) || emergencyPct < 0 || emergencyPct > 100) {
+      showFieldError("emergency-error", "Enter a value between 0 and 100.");
+      pctValid = false;
+    }
+    if (!pctValid) return;
+
+    if (savingsPct + emergencyPct > 100) {
+      showFormError(`Savings (${savingsPct}%) + Emergency (${emergencyPct}%) can't exceed 100%.`);
+      return;
+    }
+  } else {
+    // Over budget — savings/emergency are optional. Use whatever valid % was entered
+    // (if any) purely for display purposes; they won't affect the calculation since
+    // there's no positive remainder to split anyway.
+    const rawSavings   = parseFloat(savingsPctEl.value);
+    const rawEmergency = parseFloat(emergencyPctEl.value);
+    savingsPct   = (!isNaN(rawSavings)   && rawSavings   >= 0 && rawSavings   <= 100) ? rawSavings   : 0;
+    emergencyPct = (!isNaN(rawEmergency) && rawEmergency >= 0 && rawEmergency <= 100) ? rawEmergency : 0;
+  }
+
+  //Misc names
   const miscNames = [];
   document.querySelectorAll(".misc-expense").forEach(input => {
     const v = input.value.trim();
@@ -342,7 +455,7 @@ document.getElementById("salary-form").addEventListener("submit", function(e) {
   });
 
   // Calculate
-  const remaining     = salary - totalMainMonthly;
+  const remaining     = remainingBeforePct;
   const savings       = remaining > 0 ? (remaining * savingsPct) / 100 : 0;
   const emergencyCash = remaining > 0 ? (remaining * emergencyPct) / 100 : 0;
   const miscPool      = Math.max(remaining - savings - emergencyCash, 0);
@@ -360,7 +473,7 @@ document.getElementById("salary-form").addEventListener("submit", function(e) {
   renderResult(lastResultData);
 });
 
-/* Render result */
+/* Render Result */
 
 function renderResult(d) {
   const {
@@ -369,10 +482,15 @@ function renderResult(d) {
     miscPool, miscNames, miscShare,
   } = d;
 
-  const isOverBudget = remaining < 0;
+  const isOverBudget = remaining <= 0;
 
   resultMeta.textContent = `Monthly salary: ${fmt(salary)}`;
   overBudget.classList.toggle("hidden", !isOverBudget);
+  if (isOverBudget) {
+    overBudgetText.textContent = remaining < 0
+      ? `Your fixed expenses (${fmt(totalMainMonthly)}) exceed your salary by ${fmt(Math.abs(remaining))}. Cut costs or find additional income.`
+      : `Your fixed expenses (${fmt(totalMainMonthly)}) use up your entire salary. There's nothing left for savings, emergency fund, or miscellaneous spending.`;
+  }
 
   // Tiles
   tilFixed.textContent     = fmt(totalMainMonthly);
@@ -380,8 +498,8 @@ function renderResult(d) {
   tilEmergency.textContent = fmt(emergencyCash);
   tilMisc.textContent      = fmt(miscPool);
 
-  subSavings.textContent   = savingsPct + "% of remainder";
-  subEmergency.textContent = emergencyPct + "% of remainder";
+  subSavings.textContent   = isOverBudget ? "No remainder to allocate" : savingsPct + "% of remainder";
+  subEmergency.textContent = isOverBudget ? "No remainder to allocate" : emergencyPct + "% of remainder";
 
   // Fixed list
   listFixed.innerHTML = mainExpenses.length
@@ -444,7 +562,7 @@ function renderResult(d) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-/* go back */
+/* Go back */
 
 document.getElementById("goBackBtn").addEventListener("click", function() {
   resultCard.classList.add("hidden");
@@ -453,7 +571,7 @@ document.getElementById("goBackBtn").addEventListener("click", function() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
-/* Download summary(styled html file) */
+/* DOWNLOAD SUMMARY (styled HTML file) */
 
 document.getElementById("downloadBtn").addEventListener("click", function() {
   if (!lastResultData) return;
@@ -777,8 +895,12 @@ document.getElementById("okBtn").addEventListener("click", function() {
   clearErrors();
   pctHint.textContent = "";
   overBudget.classList.add("hidden");
-  tipBlock.textContent = "";
+  budgetHint.textContent = "";
+  budgetHint.classList.remove("budget-warning", "budget-danger");
   lastResultData = null;
+
+  //unlock saving, miwsc and emergency field
+  setOptionalFieldsLocked(false);
 
   // Swap cards
   resultCard.classList.add("hidden");

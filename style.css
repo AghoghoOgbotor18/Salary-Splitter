@@ -1,3 +1,8 @@
+/* =========================================================
+   SALARY SPLITTER — style.css
+   ========================================================= */
+
+/* ── Variables ───────────────────────────────────────────── */
 :root {
   --bg:             #0b1020;
   --card:           #121931;
@@ -24,15 +29,9 @@
   --col-misc:       #b085f5;
 }
 
-/* Reset */
-*, *::before, *::after { 
-  box-sizing: border-box; 
-  margin: 0; 
-  padding: 0; 
-}
-html, body { 
-  height: 100%; 
-}
+/* ── Reset ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
 body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
                "Helvetica Neue", Arial, "Noto Sans", sans-serif;
@@ -44,11 +43,9 @@ body {
   display: flex;
   flex-direction: column;
 }
-main { 
-  flex: 1; 
-}
+main { flex: 1; }
 
-/* Topbar */
+/* ── Topbar ──────────────────────────────────────────────── */
 .topbar {
   position: sticky;
   top: 0;
@@ -79,7 +76,7 @@ main {
   flex-shrink: 0;
 }
 
-/* Layout */
+/* ── Layout ──────────────────────────────────────────────── */
 .container {
   max-width: 860px;
   margin: 32px auto;
@@ -94,14 +91,14 @@ main {
 }
 .card + .card { margin-top: 20px; }
 
-/* Typography */
+/* ── Typography ──────────────────────────────────────────── */
 h1 { font-size: clamp(1.4rem, 2.2vw, 1.9rem); margin-bottom: 8px; }
 h2 { font-size: clamp(1.05rem, 1.8vw, 1.3rem); margin-bottom: 8px; }
 h3 { font-size: 1rem; margin-bottom: 6px; }
 .muted  { color: var(--muted); }
 .small  { font-size: .875rem; }
 
-/*  Form */
+/* ── Form ─────────────────────────────────────────────────── */
 .form { display: grid; gap: 16px; }
 .form-row { display: grid; gap: 6px; }
 label { font-weight: 600; font-size: .9rem; }
@@ -143,7 +140,45 @@ input:focus {
   font-size: .9rem;
 }
 
-/* Grid layouts */
+/* Live budget hint (under fixed expenses) */
+#budget-hint {
+  min-height: 0;
+  transition: color .2s ease;
+}
+#budget-hint.budget-warning {
+  color: var(--warning);
+  font-weight: 600;
+}
+#budget-hint.budget-danger {
+  background: var(--danger-weak);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--danger);
+  font-weight: 600;
+  font-size: .85rem;
+}
+
+/* Locked optional fields (savings, emergency, misc) when fixed expenses
+   already meet or exceed the salary — visually disabled, not clickable */
+input.field-locked {
+  cursor: not-allowed;
+  background: #0a0e22;
+  color: var(--muted);
+  border-color: #ffffff14;
+  opacity: .6;
+}
+input.field-locked:focus {
+  border-color: #ffffff14;
+  box-shadow: none;
+}
+.btn.btn-locked {
+  cursor: not-allowed;
+  opacity: .5;
+  pointer-events: none;
+}
+
+/* ── Grid layouts ─────────────────────────────────────────── */
 .grid-3 {
   display: grid;
   gap: 10px;
@@ -164,7 +199,7 @@ input:focus {
   gap: 4px;
 }
 
-/* Buttons */
+/* ── Buttons ──────────────────────────────────────────────── */
 .btn-row { display: flex; gap: 10px; align-items: center; }
 .btn-row.end { justify-content: flex-end; }
 
@@ -218,13 +253,10 @@ input:focus {
   border-color: var(--success);
 }
 
-/* Hide remove btn on the FIRST row */
-.hidden-remove { 
-  visibility: hidden; 
-  pointer-events: none; 
-}
+/* Hide remove btn on the FIRST row (can't remove it) */
+.hidden-remove { visibility: hidden; pointer-events: none; }
 
-/* Resume session banner */
+/* ── Resume session banner ────────────────────────────────── */
 .resume-banner {
   display: flex;
   align-items: center;
@@ -254,13 +286,8 @@ input:focus {
   white-space: nowrap;
 }
 .resume-btn:hover { background: #5b8cff30; }
-.resume-actions{
-  display:flex;
-  align-items: center;
-  gap:7px;
-}
 
-/* Misc row */
+/* ── Misc row ─────────────────────────────────────────────── */
 .misc-row {
   display: flex;
   gap: 8px;
@@ -275,7 +302,7 @@ input:focus {
   gap: 12px;
 }
 
-/* Result card */
+/* ── Result card ──────────────────────────────────────────── */
 .hidden { display: none !important; }
 
 .result-header { margin-bottom: 20px; }
@@ -421,6 +448,7 @@ input:focus {
   flex-wrap: wrap;
 }
 
+/* Footer */
 .footer {
   background: linear-gradient(180deg, transparent, #080d1a);
   border-top: 1px solid #ffffff0e;
@@ -455,7 +483,7 @@ input:focus {
 }
 .footer-links a:hover { color: var(--accent); }
 
-
+/* responsive */
 @media (max-width: 700px) {
   .grid-3 {
     grid-template-columns: 1fr;

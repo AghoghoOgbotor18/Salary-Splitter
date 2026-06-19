@@ -5,18 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Salary Splitter</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 </head>
 <body>
 
   <!-- TOPBAR -->
   <header class="topbar">
     <div class="brand">
-      <span class="logo">₦</span>
+      <span class="logo">&#8358;</span>
       <span>Salary Splitter</span>
     </div>
   </header>
 
   <main class="container">
+
+    <!-- RESUME BANNER (shown when a saved session exists) -->
+    <div id="resume-banner" class="resume-banner hidden">
+        <div class="resume-text">
+          <span class="resume-icon"><i class="fa-solid fa-file"></i></span>
+          <div>
+            <strong>You have a saved session</strong>
+            <p class="muted small">Last saved: <span id="resume-date"></span></p>
+          </div>
+        </div>
+        <div class="resume-actions">
+          <button id="resumeBtn"   class="btn primary small-btn">Resume session</button>
+          <button id="discardBtn"  class="btn ghost  small-btn">Start fresh</button>
+        </div>
+    </div>
 
     <!-- FORM CARD -->
     <section class="card" id="salary-card">
@@ -26,18 +42,6 @@
         We'll prioritize them, set aside <strong>savings</strong> and an <strong>emergency fund</strong>,
         then share the rest across your <strong>miscellaneous</strong> expenses.
       </p>
-
-      <!-- Resume session banner (shown by JS if saved session exists) -->
-      <div id="resume-banner" class="resume-banner hidden">
-        <div class="resume-text">
-          <span>🗂</span>
-          <span>You have a saved session from <strong id="resume-date"></strong>.</span>
-        </div>
-        <div class="resume-actions">
-          <button type="button" id="resumeBtn" class="btn ghost resume-btn">Restore it</button>
-          <button type="button" id="discardBtn" class="btn ghost resume-btn">Start fresh</button>
-        </div>
-      </div>
 
       <form id="salary-form" class="form" novalidate>
 
@@ -56,7 +60,7 @@
           <span class="field-error" id="salary-error"></span>
         </div>
 
-        <!-- MAIN EXPENSES -->
+        <!-- FIXED EXPENSES -->
         <div class="section-divider">
           <h2>Fixed Expenses</h2>
           <p class="muted small">
@@ -78,39 +82,29 @@
           <button type="button" id="add-expense" class="btn ghost">+ Add fixed expense</button>
         </div>
 
-        <!-- SAVINGS & EMERGENCY INPUTS -->
+        <p class="muted small" id="budget-hint"></p>
+
+        <!-- SAVINGS & EMERGENCY -->
         <div class="section-divider">
           <h2>Savings & Emergency Fund</h2>
           <p class="muted small">
             How much of the <em>remainder</em> (after fixed expenses) do you want to set aside?
+            <span class="muted small">Not required if your fixed expenses already use up your full salary.</span>
           </p>
         </div>
 
         <div class="grid-2">
           <div class="form-row">
             <label for="savings-pct">Savings (%)</label>
-            <input
-              type="number"
-              id="savings-pct"
-              placeholder="e.g. 20"
-              min="0" max="100" step="1"
-              required
-            >
+            <input type="number" id="savings-pct" placeholder="e.g. 20" min="0" max="100" step="1">
             <span class="field-error" id="savings-error"></span>
           </div>
           <div class="form-row">
             <label for="emergency-pct">Emergency Fund (%)</label>
-            <input
-              type="number"
-              id="emergency-pct"
-              placeholder="e.g. 10"
-              min="0" max="100" step="1"
-              required
-            >
+            <input type="number" id="emergency-pct" placeholder="e.g. 10" min="0" max="100" step="1">
             <span class="field-error" id="emergency-error"></span>
           </div>
         </div>
-
         <p class="muted small" id="pct-hint"></p>
 
         <!-- MISC EXPENSES -->
@@ -128,11 +122,11 @@
           </div>
         </div>
 
-        <!-- Inline form error -->
+        <!-- Inline form error banner -->
         <div id="form-error" class="form-error hidden"></div>
 
         <div class="btn-row end" style="margin-top:8px">
-          <button type="submit" class="btn primary">Split My Salary →</button>
+          <button type="submit" class="btn primary">Split My Salary <i class="fa-solid fa-chevron-right"></i></button>
         </div>
 
       </form>
@@ -148,65 +142,48 @@
 
       <!-- Visual split bar -->
       <div class="split-bar-wrap">
-        <div class="split-bar" id="split-bar">
-          <!-- segments injected by JS -->
-        </div>
-        <div class="split-legend" id="split-legend">
-          <!-- legend items injected by JS -->
-        </div>
+        <div class="split-bar" id="split-bar"></div>
+        <div class="split-legend" id="split-legend"></div>
       </div>
 
-      <!-- summary tiles -->
+      <!-- 4 summary tiles -->
       <div class="result-grid">
-
-        <div class="result-block" id="block-fixed">
-          <div class="block-label">
-            <span class="dot dot-fixed"></span>Fixed Expenses
-          </div>
+        <div class="result-block">
+          <div class="block-label"><span class="dot dot-fixed"></span>Fixed Expenses</div>
           <div class="block-amount" id="tile-fixed">—</div>
           <ul class="tile-list" id="list-fixed"></ul>
         </div>
-
-        <div class="result-block" id="block-savings">
-          <div class="block-label">
-            <span class="dot dot-savings"></span>Savings
-          </div>
+        <div class="result-block">
+          <div class="block-label"><span class="dot dot-savings"></span>Savings</div>
           <div class="block-amount" id="tile-savings">—</div>
           <p class="tile-sub" id="sub-savings"></p>
         </div>
-
-        <div class="result-block" id="block-emergency">
-          <div class="block-label">
-            <span class="dot dot-emergency"></span>Emergency Fund
-          </div>
+        <div class="result-block">
+          <div class="block-label"><span class="dot dot-emergency"></span>Emergency Fund</div>
           <div class="block-amount" id="tile-emergency">—</div>
           <p class="tile-sub" id="sub-emergency"></p>
         </div>
-
-        <div class="result-block" id="block-misc">
-          <div class="block-label">
-            <span class="dot dot-misc"></span>Miscellaneous
-          </div>
+        <div class="result-block">
+          <div class="block-label"><span class="dot dot-misc"></span>Miscellaneous</div>
           <div class="block-amount" id="tile-misc">—</div>
           <ul class="tile-list" id="list-misc"></ul>
         </div>
-
       </div>
 
       <!-- Over-budget warning -->
       <div id="over-budget" class="over-budget hidden">
-        <strong>⚠ Over budget!</strong>
-        Your fixed expenses exceed your salary. Cut costs or increase income.
+        <strong id="over-budget-title">⚠ Over budget!</strong>
+        <span id="over-budget-text">Your fixed expenses exceed your salary. Cut costs or find additional income.</span>
       </div>
 
-      <!-- Tip -->
+      <!-- Contextual tip -->
       <div class="tip-block" id="tip-block"></div>
 
       <!-- Action buttons -->
       <div class="result-actions">
-        <button id="goBackBtn"   class="btn ghost">← Go Back</button>
-        <button id="downloadBtn" class="btn outline">⬇ Download Summary</button>
-        <button id="okBtn"       class="btn primary">Start Over</button>
+        <button id="goBackBtn" class="btn ghost"><i class="fa-solid fa-arrow-left"></i> Go Back</button>
+        <button id="downloadBtn" class="btn outline"><i class="fa-solid fa-download"></i> Download Summary</button>
+        <button id="okBtn" class="btn primary">Start Over</button>
       </div>
 
     </section>
@@ -217,15 +194,13 @@
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <span class="logo">&#8358;</span>
+        <span class="logo">₦</span>
         <span>Salary Splitter</span>
       </div>
-      <p class="muted small">
-        A budgeting tool for Nigerian salary earners — built with vanilla JS.
-      </p>
+      <p class="muted small">A budgeting tool for Nigerian salary earners — built with vanilla JS.</p>
       <div class="footer-links">
-        <a href="https://github.com/aghoghoogbotor18" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://aghoghoogbotor.vercel.app" target="_blank" rel="noopener">Portfolio</a>
+        <a href="https://github.com/sylvia" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://sylviaportfolio.vercel.app" target="_blank" rel="noopener">Portfolio</a>
       </div>
     </div>
   </footer>
