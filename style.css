@@ -254,6 +254,11 @@ input:focus {
   white-space: nowrap;
 }
 .resume-btn:hover { background: #5b8cff30; }
+.resume-actions{
+  display:flex;
+  align-items: center;
+  gap:7px;
+}
 
 /* Misc row */
 .misc-row {
