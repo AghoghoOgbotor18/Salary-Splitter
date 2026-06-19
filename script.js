@@ -30,7 +30,9 @@ const tipBlock       = document.getElementById("tip-block");
 // Keep last calculated data so Go Back can re-render without recalculating
 let lastResultData = null;
 
-/* Format a number as naira currency string */
+/* helpers */
+
+/* Format a number as ₦ currency string */
 function fmt(n) {
   return "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -72,7 +74,7 @@ function showFormError(msg) {
 
 /* Local Storage */
 
-/* Collect current form state into a plain object */
+/** Collect current form state into a plain object */
 function collectFormState() {
   const fixedRows = [];
   expContainer.querySelectorAll(".expenses-inputs").forEach(row => {
@@ -156,7 +158,7 @@ function restoreForm(session) {
   (session.miscNames || []).forEach(name => addMiscRow(name));
 }
 
-/* Tiny XSS guard for values going into innerHTML */
+/* Tiny guard for values going into innerHTML */
 function escapeHtml(str) {
   return String(str || "")
     .replace(/&/g, "&amp;")
@@ -165,29 +167,33 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;");
 }
 
-/* on page load - auto restore last session */
-(function initSession() {
+/* ON PAGE LOAD — show resume banner only, form stays empty */
   const session = loadSession();
   if (!session) return;
 
-  // Show the resume banner with formatted date
+  // Show the resume banner with formatted date - form stays untouched/empty
   const d = new Date(session.savedAt);
   const formatted = d.toLocaleDateString("en-NG", {
     weekday: "short", day: "numeric", month: "short", year: "numeric",
   });
   resumeDate.textContent = formatted;
   resumeBanner.classList.remove("hidden");
-
-  // Auto-restore silently into the form
-  restoreForm(session);
 })();
 
-// "Restore it" button just hides the banner (form already filled)
+// "Resume session" button restores the form THEN hides the banner
 document.getElementById("resumeBtn").addEventListener("click", function() {
+  const session = loadSession();
+  if (session) restoreForm(session);
   resumeBanner.classList.add("hidden");
 });
 
-/* live hints and formatting */
+// "Start fresh" button discards the saved session, form stays empty
+document.getElementById("discardBtn").addEventListener("click", function() {
+  clearSession();
+  resumeBanner.classList.add("hidden");
+});
+
+/* Live hints / formatting */
 
 function updatePctHint() {
   const s = parseFloat(savingsPctEl.value) || 0;
@@ -217,7 +223,7 @@ document.addEventListener("input", function(e) {
   }
 });
 
-/* Add/remove rows */
+/* Add / remove rows */
 
 document.getElementById("add-expense").addEventListener("click", function() {
   const row = document.createElement("div");
@@ -239,7 +245,7 @@ expContainer.addEventListener("click", function(e) {
   }
 });
 
-/** Add a misc row (optionally pre-filled with a name) */
+/* Add a misc row (optionally pre-filled with a name) */
 function addMiscRow(name = "") {
   const wrap = document.createElement("div");
   wrap.classList.add("misc-row");
@@ -327,7 +333,7 @@ document.getElementById("salary-form").addEventListener("submit", function(e) {
 
   if (rowErrors) return;
 
-  // 4. Misc names
+  // Misc names
   const miscNames = [];
   document.querySelectorAll(".misc-expense").forEach(input => {
     const v = input.value.trim();
@@ -337,7 +343,7 @@ document.getElementById("salary-form").addEventListener("submit", function(e) {
   // Calculate
   const remaining     = salary - totalMainMonthly;
   const savings       = remaining > 0 ? (remaining * savingsPct) / 100 : 0;
-  const emergencyCash = remaining > 0 ? ((remaining - savings) * emergencyPct) / 100 : 0;
+  const emergencyCash = remaining > 0 ? (remaining * emergencyPct) / 100 : 0;
   const miscPool      = Math.max(remaining - savings - emergencyCash, 0);
   const miscShare     = miscNames.length > 0 ? miscPool / miscNames.length : 0;
 
@@ -353,7 +359,7 @@ document.getElementById("salary-form").addEventListener("submit", function(e) {
   renderResult(lastResultData);
 });
 
-/* Render Result */
+/* Render result */
 
 function renderResult(d) {
   const {
@@ -374,7 +380,7 @@ function renderResult(d) {
   tilMisc.textContent      = fmt(miscPool);
 
   subSavings.textContent   = savingsPct + "% of remainder";
-  subEmergency.textContent = emergencyPct + "% of remainder after savings";
+  subEmergency.textContent = emergencyPct + "% of remainder";
 
   // Fixed list
   listFixed.innerHTML = mainExpenses.length
@@ -421,13 +427,13 @@ function renderResult(d) {
   // Tip
   let tip = "";
   if (isOverBudget) {
-    tip = "Your fixed expenses exceed your income. Consider reducing recurring costs or finding additional income streams.";
+    tip = "💡 Your fixed expenses exceed your income. Consider reducing recurring costs or finding additional income streams.";
   } else if (savingsPct === 0 && emergencyPct === 0) {
-    tip = "You haven't set aside any savings. Even 10% makes a significant difference over time.";
+    tip = "💡 You haven't set aside any savings. Even 10% makes a significant difference over time.";
   } else if (savingsPct + emergencyPct >= 50) {
-    tip = "Great discipline! Setting aside over 50% for savings and emergencies puts you ahead of most people.";
+    tip = "💡 Great discipline! Setting aside over 50% for savings and emergencies puts you ahead of most people.";
   } else {
-    tip = "Good start! Try increasing your savings rate by 5% each month until you reach 20–30%.";
+    tip = "💡 Good start! Try increasing your savings rate by 5% each month until you reach 20–30%.";
   }
   tipBlock.textContent = tip;
 
@@ -437,7 +443,7 @@ function renderResult(d) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-/* Go Back */
+/* go back */
 
 document.getElementById("goBackBtn").addEventListener("click", function() {
   resultCard.classList.add("hidden");
@@ -446,7 +452,7 @@ document.getElementById("goBackBtn").addEventListener("click", function() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
-/* Download Summary */
+/* Download summary(styled html file) */
 
 document.getElementById("downloadBtn").addEventListener("click", function() {
   if (!lastResultData) return;
@@ -666,7 +672,7 @@ document.getElementById("downloadBtn").addEventListener("click", function() {
       <div class="tile tile-emerg">
         <div class="tile-label">Emergency Fund</div>
         <div class="tile-amount">${fmt(d.emergencyCash)}</div>
-        <div class="tile-sub">${d.emergencyPct}% of remainder after savings</div>
+        <div class="tile-sub">${d.emergencyPct}% of remainder</div>
       </div>
       <div class="tile tile-misc">
         <div class="tile-label">Miscellaneous</div>
@@ -715,7 +721,7 @@ document.getElementById("downloadBtn").addEventListener("click", function() {
     </div>
 
     <div class="footer">
-      <span>Built with <strong>Salary Splitter</strong> by Aghogho</span>
+      <span>Built with <strong>Salary Splitter</strong> by Sylvia</span>
       <span>${fmt(d.salary)} · ${now}</span>
     </div>
 
